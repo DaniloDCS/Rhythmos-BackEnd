@@ -1,0 +1,25 @@
+{
+  "sequence": 1,
+  "title": "Caso 1 — Ritmo sinusal",
+  "shortDescription": "Interprete o ECG de forma sistemática.",
+  "patient": "Paciente adulto, 34 anos",
+  "clinicalCase": "Paciente em avaliação de rotina, hemodinamicamente estável e sem queixas cardiovasculares no momento.",
+  "history": "Sem antecedentes cardiovasculares relevantes.",
+  "clinicalInfo": [
+    { "label": "PA", "value": "118/76 mmHg" },
+    { "label": "SpO₂", "value": "98%" },
+    { "label": "FC", "value": "78 bpm" }
+  ],
+  "ecg": {
+    "rhythm": "sinusal",
+    "fc": 78,
+    "paperSpeed": 25,
+    "gain": 10
+  },
+  "analysisSteps": [],
+  "correctAnswer": "Ritmo sinusal",
+  "acceptedAnswers": ["ritmo sinusal normal", "ritmo sinusal regular"],
+  "feedbackCorrect": "Correto. O traçado é compatível com ritmo sinusal.",
+  "feedbackIncorrect": "Revise a presença de onda P antes de cada QRS e a regularidade do ritmo.",
+  "status": "rascunho"
+}
