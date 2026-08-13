@@ -2,7 +2,7 @@ import type {
   TimelineLevel,
   TimelineTargetType,
   TimelineType,
-} from "./Timeline.types";
+} from "./timeline.types";
 
 export interface ITimelineMetadata {
   [key: string]: any;

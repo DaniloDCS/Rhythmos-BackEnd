@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import { db } from "../config/firebase";
-import { Status } from "../models/Trails";
+import { TStatus } from "../models/.";
 
 interface IMetrics {
   totalTrails: number;
   totalModules: number;
   totalLessons: number;
   statusCount: {
-    [status in Status]: {
+    [status in TStatus]: {
       trails: number;
       modules: number;
       lessons: number;
@@ -28,12 +28,13 @@ interface IMetrics {
 export const getMetrics = async (_: Request, res: Response) => {
   try {
     const statusCount = {
-      Concluída: { trails: 0, modules: 0, lessons: 0 },
-      "Em curso": { trails: 0, modules: 0, lessons: 0 },
-      Disponível: { trails: 0, modules: 0, lessons: 0 },
-      Indisponível: { trails: 0, modules: 0, lessons: 0 },
-      "Em construção": { trails: 0, modules: 0, lessons: 0 },
-      "Em atualização": { trails: 0, modules: 0, lessons: 0 },
+      concluida: { trails: 0, modules: 0, lessons: 0 },
+      em_curso: { trails: 0, modules: 0, lessons: 0 },
+      disponivel: { trails: 0, modules: 0, lessons: 0 },
+      indisponivel: { trails: 0, modules: 0, lessons: 0 },
+      em_construcao: { trails: 0, modules: 0, lessons: 0 },
+      em_atualizacao: { trails: 0, modules: 0, lessons: 0 },
+      rascunho: { trails: 0, modules: 0, lessons: 0 },
     };
 
     let totalCreationTimeTrilhas = 0;
@@ -52,7 +53,7 @@ export const getMetrics = async (_: Request, res: Response) => {
     trailSnapshot.docs.forEach((doc) => {
       const trail = doc.data();
       totalTrails += 1;
-      statusCount[trail.status as Status].trails += 1;
+      statusCount[trail.status as TStatus].trails += 1;
 
       const creationTime =
         (new Date().getTime() - trail.createdAt.seconds * 1000) /
@@ -71,7 +72,7 @@ export const getMetrics = async (_: Request, res: Response) => {
     moduleSnapshot.docs.forEach((doc) => {
       const module = doc.data();
       totalModules += 1;
-      statusCount[module.status as Status].modules += 1;
+      statusCount[module.status as TStatus].modules += 1;
 
       const creationTime =
         (new Date().getTime() - module.createdAt.seconds * 1000) /
@@ -90,7 +91,7 @@ export const getMetrics = async (_: Request, res: Response) => {
     classSnapshot.docs.forEach((doc) => {
       const classItem = doc.data();
       totallessons += 1;
-      statusCount[classItem.status as Status].lessons += 1;
+      statusCount[classItem.status as TStatus].lessons += 1;
 
       const creationTime =
         (new Date().getTime() - classItem.createdAt.seconds * 1000) /

@@ -1,13 +1,14 @@
-import { ITrail, Status } from "./Trails";
+import { ITrail } from "./Trails";
 import { IModule } from "./Module";
 import { ILesson } from "./Lesson";
+import { TStatus } from "./.";
 
 export interface IAnalyticsAdmin {
   totalTrails: number;
   totalModules: number;
   totalLessons: number;
   statusCount: Record<
-    Status,
+    TStatus,
     {
       trails: number;
       modules: number;
@@ -31,12 +32,13 @@ export class AnalyticsAdmin implements IAnalyticsAdmin {
   totalModules: number = 0;
   totalLessons: number = 0;
   statusCount: IAnalyticsAdmin["statusCount"] = {
-    Concluída: { trails: 0, modules: 0, lessons: 0 },
-    "Em curso": { trails: 0, modules: 0, lessons: 0 },
-    Disponível: { trails: 0, modules: 0, lessons: 0 },
-    Indisponível: { trails: 0, modules: 0, lessons: 0 },
-    "Em construção": { trails: 0, modules: 0, lessons: 0 },
-    "Em atualização": { trails: 0, modules: 0, lessons: 0 },
+    concluida: { trails: 0, modules: 0, lessons: 0 },
+    em_curso: { trails: 0, modules: 0, lessons: 0 },
+    disponivel: { trails: 0, modules: 0, lessons: 0 },
+    indisponivel: { trails: 0, modules: 0, lessons: 0 },
+    em_construcao: { trails: 0, modules: 0, lessons: 0 },
+    em_atualizacao: { trails: 0, modules: 0, lessons: 0 },
+    rascunho: { trails: 0, modules: 0, lessons: 0 },
   };
   averageCreationTime = { trails: 0, modules: 0, lessons: 0 };
   averageUpdateTime = { trails: 0, modules: 0, lessons: 0 };
@@ -50,7 +52,7 @@ export class AnalyticsAdmin implements IAnalyticsAdmin {
     let totalUpdateTime = { trails: 0, modules: 0, lessons: 0 };
 
     trails.forEach((t) => {
-      const status = t.status ?? "Em construção";
+      const status = t.status ?? "em_construcao";
       this.statusCount[status].trails += 1;
 
       const creationTime =
@@ -64,7 +66,7 @@ export class AnalyticsAdmin implements IAnalyticsAdmin {
     });
 
     modules.forEach((m) => {
-      const status = m.status ?? "Em construção";
+      const status = m.status ?? "em_construcao";
       this.statusCount[status].modules += 1;
 
       const creationTime =
@@ -78,7 +80,7 @@ export class AnalyticsAdmin implements IAnalyticsAdmin {
     });
 
     lessons.forEach((c) => {
-      const status = c.status ?? "Em construção";
+      const status = c.status ?? "em_construcao";
       this.statusCount[status].lessons += 1;
 
       const creationTime =

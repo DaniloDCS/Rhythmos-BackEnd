@@ -21,7 +21,7 @@ export const createTimelineSchema = z.object({
     .enum(["trail", "module", "lesson", "quiz", "user", "achievement"])
     .optional(),
 
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 
   icon: z.string().optional(),
 
