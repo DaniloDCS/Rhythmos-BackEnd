@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import type { AuthenticatedRequest } from "../../middlewares/authMiddleware";
+import type { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 import { sketchbookService } from "./sketchbook.service";
 
 const handleSketchbookError = (error: unknown, res: Response) => {
@@ -39,6 +39,7 @@ const handleSketchbookError = (error: unknown, res: Response) => {
   console.error("Erro no Sketchbook:", error);
 
   return res.status(500).json({
+    error: "INTERNAL_SERVER_ERROR",
     message: "Não foi possível processar o Sketchbook.",
   });
 };
@@ -50,6 +51,7 @@ export const getSketchbookTabs = async (
   try {
     if (!req.user?.uid) {
       return res.status(401).json({
+        error: "UNAUTHORIZED",
         message: "Usuário não autenticado.",
       });
     }
@@ -69,14 +71,12 @@ export const createSketchbookTab = async (
   try {
     if (!req.user?.uid) {
       return res.status(401).json({
+        error: "UNAUTHORIZED",
         message: "Usuário não autenticado.",
       });
     }
 
-    const tab = await sketchbookService.create(
-      req.user.uid,
-      req.body ?? {},
-    );
+    const tab = await sketchbookService.create(req.user.uid, req.body ?? {});
 
     return res.status(201).json(tab);
   } catch (error) {
@@ -91,6 +91,7 @@ export const updateSketchbookTab = async (
   try {
     if (!req.user?.uid) {
       return res.status(401).json({
+        error: "UNAUTHORIZED",
         message: "Usuário não autenticado.",
       });
     }
@@ -103,6 +104,7 @@ export const updateSketchbookTab = async (
 
     if (!tab) {
       return res.status(404).json({
+        error: "NOT_FOUND",
         message: "Aba do Sketchbook não encontrada.",
       });
     }
@@ -120,17 +122,16 @@ export const deleteSketchbookTab = async (
   try {
     if (!req.user?.uid) {
       return res.status(401).json({
+        error: "UNAUTHORIZED",
         message: "Usuário não autenticado.",
       });
     }
 
-    const deleted = await sketchbookService.delete(
-      req.user.uid,
-      req.params.id,
-    );
+    const deleted = await sketchbookService.delete(req.user.uid, req.params.id);
 
     if (!deleted) {
       return res.status(404).json({
+        error: "NOT_FOUND",
         message: "Aba do Sketchbook não encontrada.",
       });
     }

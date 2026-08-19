@@ -7,7 +7,6 @@ import {
 import { db } from "../../config/firebase";
 import type { IHeatmap, IHeatmapDays } from "./heatmap.interfaces";
 import type { HeatmapDate, HeatmapLevel } from "./heatmap.types";
-import { cp } from "fs";
 
 const USERS_COLLECTION = "users";
 

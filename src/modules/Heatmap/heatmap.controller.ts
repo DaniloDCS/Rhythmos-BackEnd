@@ -11,12 +11,14 @@ export class HeatmapController {
 
       if (!userId) {
         return res.status(400).json({
+          error: "VALIDATION_ERROR",
           message: "userId é obrigatório.",
         });
       }
 
       if (!Number.isInteger(year)) {
         return res.status(400).json({
+          error: "VALIDATION_ERROR",
           message: "Ano inválido.",
         });
       }
@@ -28,6 +30,7 @@ export class HeatmapController {
       console.error("[Heatmap] Erro GET:", error);
 
       return res.status(500).json({
+        error: error instanceof Error ? error.message : String(error),
         message: "Erro ao carregar heatmap.",
       });
     }
@@ -39,6 +42,7 @@ export class HeatmapController {
 
       if (!userId) {
         return res.status(400).json({
+          error: "VALIDATION_ERROR",
           message: "userId é obrigatório.",
         });
       }
@@ -56,6 +60,7 @@ export class HeatmapController {
       console.error("[Heatmap] Erro POST:", error);
 
       return res.status(500).json({
+        error: error instanceof Error ? error.message : String(error),
         message: "Erro ao registrar atividade no heatmap.",
       });
     }

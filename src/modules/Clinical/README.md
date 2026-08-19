@@ -1,6 +1,7 @@
 # Clinical — backend Rhythmos
 
 ## Onde copiar
+
 Copie a pasta `Clinical` para:
 
 `backend/src/modules/Clinical`
@@ -68,6 +69,7 @@ O ID do progresso é determinístico: `userId__caseId`. Isso impede XP duplicado
 Primeira conclusão correta: `+100 XP`.
 
 O módulo atualiza:
+
 - `user_progress.xp`
 - `user_progress.level`
 - `user_progress.levels`

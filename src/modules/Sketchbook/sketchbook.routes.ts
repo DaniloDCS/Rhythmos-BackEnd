@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyFirebaseToken } from "../../middlewares/authMiddleware";
+import { verifyFirebaseToken } from "../../middlewares/auth.middleware";
 import {
   createSketchbookTab,
   deleteSketchbookTab,
@@ -7,30 +7,12 @@ import {
   updateSketchbookTab,
 } from "./sketchbook.controller";
 
-const SketchbookRouter = Router();
+export const SketchbookRouter = Router();
 
-SketchbookRouter.get(
-  "/",
-  verifyFirebaseToken,
-  getSketchbookTabs,
-);
+SketchbookRouter.get("/", verifyFirebaseToken, getSketchbookTabs);
 
-SketchbookRouter.post(
-  "/tabs",
-  verifyFirebaseToken,
-  createSketchbookTab,
-);
+SketchbookRouter.post("/tabs", verifyFirebaseToken, createSketchbookTab);
 
-SketchbookRouter.patch(
-  "/tabs/:id",
-  verifyFirebaseToken,
-  updateSketchbookTab,
-);
+SketchbookRouter.patch("/tabs/:id", verifyFirebaseToken, updateSketchbookTab);
 
-SketchbookRouter.delete(
-  "/tabs/:id",
-  verifyFirebaseToken,
-  deleteSketchbookTab,
-);
-
-export default SketchbookRouter;
+SketchbookRouter.delete("/tabs/:id", verifyFirebaseToken, deleteSketchbookTab);

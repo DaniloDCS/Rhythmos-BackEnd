@@ -4,16 +4,13 @@ import type {
   ICreateSketchbookTab,
   ISketchbookTab,
   IUpdateSketchbookTab,
-} from "./sketchbook.interface";
+} from "./sketchbook.types";
 
 const SUBCOLLECTION = "sketchbook_tabs";
 
 export class SketchbookRepository {
   private collection(userId: string) {
-    return db
-      .collection("users")
-      .doc(userId)
-      .collection(SUBCOLLECTION);
+    return db.collection("users").doc(userId).collection(SUBCOLLECTION);
   }
 
   async list(userId: string): Promise<ISketchbookTab[]> {
@@ -27,10 +24,7 @@ export class SketchbookRepository {
     }));
   }
 
-  async getById(
-    userId: string,
-    tabId: string,
-  ): Promise<ISketchbookTab | null> {
+  async getById(userId: string, tabId: string): Promise<ISketchbookTab | null> {
     const doc = await this.collection(userId).doc(tabId).get();
 
     if (!doc.exists) return null;

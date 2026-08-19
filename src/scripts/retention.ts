@@ -1,0 +1,4 @@
+import "dotenv/config"; import { Timestamp } from "firebase-admin/firestore"; import { db } from "../config/firebase";
+const execute = process.argv.includes("--execute"); const policies = [{ collection: "user_sessions", field: "lastSeenAt", days: 180 }, { collection: "system_alerts", field: "createdAt", days: 180 }];
+const run = async () => { for (const policy of policies) { const cutoff = Timestamp.fromMillis(Date.now() - policy.days * 86400000); const snapshot = await db.collection(policy.collection).where(policy.field, "<", cutoff).get(); console.log(JSON.stringify({ event: "retention_scan", collection: policy.collection, found: snapshot.size, execute })); if (execute && !snapshot.empty) { const batch = db.batch(); snapshot.docs.forEach((doc) => batch.delete(doc.ref)); await batch.commit(); } } };
+run().catch((error) => { console.error(error); process.exitCode = 1; });

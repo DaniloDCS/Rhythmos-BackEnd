@@ -82,7 +82,10 @@ export class ClinicalRepository {
     }
 
     const snapshot = await query.get();
-    const countSnapshot = await db.collection(CLINICAL_CASES_COLLECTION).count().get();
+    const countSnapshot = await db
+      .collection(CLINICAL_CASES_COLLECTION)
+      .count()
+      .get();
     const lastVisible = snapshot.docs[snapshot.docs.length - 1];
 
     return {
@@ -181,7 +184,10 @@ export class ClinicalRepository {
       published: cases.filter((item) => item.status === "publicado").length,
       drafts: cases.filter((item) => item.status === "rascunho").length,
       archived: cases.filter((item) => item.status === "arquivado").length,
-      attempts: cases.reduce((sum, item) => sum + (item.metrics.attempts ?? 0), 0),
+      attempts: cases.reduce(
+        (sum, item) => sum + (item.metrics.attempts ?? 0),
+        0,
+      ),
       correctAttempts: cases.reduce(
         (sum, item) => sum + (item.metrics.correctAttempts ?? 0),
         0,

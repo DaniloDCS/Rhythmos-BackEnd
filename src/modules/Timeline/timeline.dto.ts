@@ -29,9 +29,3 @@ export interface CreateTimelineDTO {
 
   color?: string;
 }
-
-export interface GetTimelineDTO {
-  userId: string;
-
-  limit?: number;
-}

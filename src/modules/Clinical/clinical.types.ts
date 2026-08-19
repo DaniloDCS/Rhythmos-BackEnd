@@ -47,7 +47,6 @@ export interface IClinicalCase {
   ecg: IClinicalCaseECG;
   analysisSteps?: IClinicalCaseStep[];
 
-  // PRIVADO / ADMIN
   correctAnswer: string;
   acceptedAnswers: string[];
   feedbackCorrect?: string;

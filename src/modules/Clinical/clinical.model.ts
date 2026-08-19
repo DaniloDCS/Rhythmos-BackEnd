@@ -17,22 +17,31 @@ export class ClinicalCaseModel {
       id,
       sequence: Number(data.sequence ?? 0),
       title: String(data.title ?? ""),
-      shortDescription: data.shortDescription ? String(data.shortDescription) : undefined,
+      shortDescription: data.shortDescription
+        ? String(data.shortDescription)
+        : undefined,
       clinicalCase: String(data.clinicalCase ?? ""),
       history: data.history ? String(data.history) : undefined,
       patient: data.patient ? String(data.patient) : undefined,
       clinicalInfo: Array.isArray(data.clinicalInfo) ? data.clinicalInfo : [],
       ecg: data.ecg ?? {},
-      analysisSteps: Array.isArray(data.analysisSteps) ? data.analysisSteps : [],
+      analysisSteps: Array.isArray(data.analysisSteps)
+        ? data.analysisSteps
+        : [],
       correctAnswer: String(data.correctAnswer ?? ""),
       acceptedAnswers: Array.isArray(data.acceptedAnswers)
         ? data.acceptedAnswers.map(String)
         : [],
-      feedbackCorrect: data.feedbackCorrect ? String(data.feedbackCorrect) : undefined,
-      feedbackIncorrect: data.feedbackIncorrect ? String(data.feedbackIncorrect) : undefined,
-      status: data.status === "publicado" || data.status === "arquivado"
-        ? data.status
-        : "rascunho",
+      feedbackCorrect: data.feedbackCorrect
+        ? String(data.feedbackCorrect)
+        : undefined,
+      feedbackIncorrect: data.feedbackIncorrect
+        ? String(data.feedbackIncorrect)
+        : undefined,
+      status:
+        data.status === "publicado" || data.status === "arquivado"
+          ? data.status
+          : "rascunho",
       metrics: {
         ...defaultMetrics(),
         ...(data.metrics ?? {}),
@@ -46,7 +55,6 @@ export class ClinicalCaseModel {
   }
 
   static toPublic(item: IClinicalCase, completed = false): IClinicalCasePublic {
-    // whitelist: nunca envia correctAnswer/acceptedAnswers para o usuário.
     return {
       id: item.id,
       sequence: item.sequence,

@@ -1,0 +1,193 @@
+import type { PedagogicalCompetencyDefinition } from "./pedagogical-analytics.types";
+
+export const PEDAGOGICAL_COMPETENCIES: PedagogicalCompetencyDefinition[] = [
+  {
+    id: "fundamentos_ecg",
+    name: "Fundamentos do ECG",
+    description:
+      "Compreensão dos componentes básicos do eletrocardiograma, ondas, segmentos e princípios gerais.",
+    icon: "fi fi-rr-waveform-path",
+    keywords: [
+      "ecg",
+      "eletrocardiograma",
+      "onda",
+      "ondas",
+      "segmento",
+      "intervalo",
+      "papel milimetrado",
+      "calibracao",
+      "calibração",
+    ],
+  },
+  {
+    id: "anatomia_fisiologia",
+    name: "Anatomia e condução elétrica",
+    description:
+      "Relação entre anatomia cardíaca, fisiologia e propagação do impulso elétrico.",
+    icon: "fi fi-rr-heart",
+    keywords: [
+      "anatomia",
+      "coracao",
+      "coração",
+      "fisiologia",
+      "impulso eletrico",
+      "impulso elétrico",
+      "sistema de conducao",
+      "sistema de condução",
+    ],
+  },
+  {
+    id: "posicionamento_eletrodos",
+    name: "Posicionamento de eletrodos",
+    description:
+      "Execução técnica do ECG, posicionamento dos eletrodos e compreensão das derivações.",
+    icon: "fi fi-rr-map-marker",
+    keywords: [
+      "eletrodo",
+      "eletrodos",
+      "derivacao",
+      "derivação",
+      "derivacoes",
+      "derivações",
+      "v1",
+      "v2",
+      "v3",
+      "v4",
+      "v5",
+      "v6",
+      "precordial",
+      "precordiais",
+    ],
+  },
+  {
+    id: "frequencia_regularidade",
+    name: "Frequência e regularidade",
+    description:
+      "Cálculo da frequência cardíaca e avaliação da regularidade do ritmo.",
+    icon: "fi fi-rr-pulse",
+    keywords: [
+      "frequencia",
+      "frequência",
+      "frequencia cardiaca",
+      "frequência cardíaca",
+      "regularidade",
+      "intervalo rr",
+      "ritmo regular",
+      "bradicardia",
+      "taquicardia",
+    ],
+  },
+  {
+    id: "reconhecimento_ritmos",
+    name: "Reconhecimento de ritmos",
+    description:
+      "Reconhecimento visual e diferenciação dos principais ritmos cardíacos.",
+    icon: "fi fi-rr-search-alt",
+    keywords: [
+      "ritmo",
+      "ritmos",
+      "arritmia",
+      "arritmias",
+      "fibrilacao",
+      "fibrilação",
+      "flutter",
+      "taquicardia ventricular",
+      "fibrilacao ventricular",
+      "fibrilação ventricular",
+      "assistolia",
+      "aesp",
+      "sinusal",
+    ],
+  },
+  {
+    id: "interpretacao_ecg",
+    name: "Interpretação do ECG",
+    description:
+      "Integração sistemática dos achados do traçado para interpretação eletrocardiográfica.",
+    icon: "fi fi-rr-document-signed",
+    keywords: [
+      "interpretacao",
+      "interpretação",
+      "interpretar",
+      "leitura",
+      "analise do ecg",
+      "análise do ecg",
+      "diagnostico",
+      "diagnóstico",
+      "10 passos",
+    ],
+  },
+  {
+    id: "conducao_bloqueios",
+    name: "Distúrbios de condução",
+    description:
+      "Reconhecimento e diferenciação de bloqueios e alterações da condução cardíaca.",
+    icon: "fi fi-rr-network",
+    keywords: [
+      "bav",
+      "bloqueio",
+      "bloqueios",
+      "bloqueio atrioventricular",
+      "conducao",
+      "condução",
+      "pr prolongado",
+    ],
+  },
+  {
+    id: "isquemia_iam",
+    name: "Isquemia e infarto",
+    description:
+      "Reconhecimento de alterações relacionadas à isquemia, lesão e infarto agudo do miocárdio.",
+    icon: "fi fi-rr-triangle-warning",
+    keywords: [
+      "isquemia",
+      "infarto",
+      "iam",
+      "supra de st",
+      "supradesnivelamento",
+      "infradesnivelamento",
+      "segmento st",
+      "onda t",
+    ],
+  },
+  {
+    id: "monitorizacao_clinica",
+    name: "Monitorização cardíaca",
+    description:
+      "Aplicação do ECG e dos parâmetros monitorizados no acompanhamento clínico do paciente.",
+    icon: "fi fi-rr-display-code",
+    keywords: [
+      "monitorizacao",
+      "monitorização",
+      "monitor",
+      "monitor multiparametrico",
+      "monitor multiparamétrico",
+      "alarme",
+      "alarmes",
+    ],
+  },
+  {
+    id: "tomada_decisao",
+    name: "Tomada de decisão clínica",
+    description:
+      "Uso dos achados eletrocardiográficos para reconhecer gravidade e orientar prioridades de cuidado.",
+    icon: "fi fi-rr-user-md",
+    keywords: [
+      "caso clinico",
+      "caso clínico",
+      "conduta",
+      "decisao",
+      "decisão",
+      "emergencia",
+      "emergência",
+      "choque",
+      "desfibrilador",
+      "dea",
+      "prioridade",
+    ],
+  },
+];
+
+export const COMPETENCY_BY_ID = new Map(
+  PEDAGOGICAL_COMPETENCIES.map((item) => [item.id, item]),
+);

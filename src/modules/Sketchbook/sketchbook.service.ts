@@ -2,7 +2,7 @@ import type {
   ICreateSketchbookTab,
   ISketchbookTab,
   IUpdateSketchbookTab,
-} from "./sketchbook.interface";
+} from "./sketchbook.types";
 import {
   SketchbookRepository,
   sketchbookRepository,

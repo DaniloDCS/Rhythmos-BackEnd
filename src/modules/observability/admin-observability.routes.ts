@@ -1,0 +1,1 @@
+import { Router } from "express"; import { getObservability, resolveAlert } from "./admin-observability.controller"; export const AdminObservabilityRoutes = Router(); AdminObservabilityRoutes.get("/", getObservability); AdminObservabilityRoutes.patch("/:id/resolve", resolveAlert);

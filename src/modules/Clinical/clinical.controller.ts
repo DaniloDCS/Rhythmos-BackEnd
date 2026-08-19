@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import type { AuthenticatedRequest } from "../../middlewares/authMiddleware";
+import type { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 import { ClinicalError, clinicalService } from "./clinical.service";
 import type { ClinicalCaseStatus, ClinicalStepAnswers } from "./clinical.types";
 
@@ -19,10 +19,15 @@ export class ClinicalController {
   async list(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Usuário não autenticado." });
+        return res.status(401).json({
+          error: "UNAUTHORIZED",
+          message: "Usuário não autenticado.",
+        });
       }
 
-      return res.status(200).json(await clinicalService.listPublic(req.user.uid));
+      return res
+        .status(200)
+        .json(await clinicalService.listPublic(req.user.uid));
     } catch (error) {
       return handleError(res, error, "Erro ao carregar casos clínicos.");
     }
@@ -31,25 +36,37 @@ export class ClinicalController {
   async answer(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Usuário não autenticado." });
+        return res.status(401).json({
+          error: "UNAUTHORIZED",
+          message: "Usuário não autenticado.",
+        });
       }
 
       const analysis = req.body?.analysis;
       const answer = String(req.body?.answer ?? "").trim();
 
-      if (!analysis || typeof analysis !== "object" || Array.isArray(analysis)) {
-        return res.status(400).json({ message: "analysis é obrigatório." });
+      if (
+        !analysis ||
+        typeof analysis !== "object" ||
+        Array.isArray(analysis)
+      ) {
+        return res.status(400).json({
+          error: "VALIDATION_ERROR",
+          message: "analysis é obrigatório.",
+        });
       }
 
       if (!answer) {
-        return res.status(400).json({ message: "answer é obrigatório." });
+        return res.status(400).json({
+          error: "VALIDATION_ERROR",
+          message: "answer é obrigatório.",
+        });
       }
 
       const normalizedAnalysis = Object.fromEntries(
-        Object.entries(analysis as Record<string, unknown>).map(([key, value]) => [
-          key,
-          String(value ?? ""),
-        ]),
+        Object.entries(analysis as Record<string, unknown>).map(
+          ([key, value]) => [key, String(value ?? "")],
+        ),
       ) as ClinicalStepAnswers;
 
       const result = await clinicalService.answer(
@@ -68,8 +85,11 @@ export class ClinicalController {
   async listAdmin(req: AuthenticatedRequest, res: Response) {
     try {
       const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
-      const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
-      return res.status(200).json(await clinicalService.listAdmin(limit, cursor));
+      const cursor =
+        typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+      return res
+        .status(200)
+        .json(await clinicalService.listAdmin(limit, cursor));
     } catch (error) {
       return handleError(res, error, "Erro ao listar casos clínicos.");
     }
@@ -77,7 +97,9 @@ export class ClinicalController {
 
   async getAdmin(req: AuthenticatedRequest, res: Response) {
     try {
-      return res.status(200).json(await clinicalService.getAdmin(req.params.id));
+      return res
+        .status(200)
+        .json(await clinicalService.getAdmin(req.params.id));
     } catch (error) {
       return handleError(res, error, "Erro ao buscar caso clínico.");
     }
@@ -93,7 +115,9 @@ export class ClinicalController {
 
   async attempts(req: AuthenticatedRequest, res: Response) {
     try {
-      return res.status(200).json(await clinicalService.attempts(req.params.id));
+      return res
+        .status(200)
+        .json(await clinicalService.attempts(req.params.id));
     } catch (error) {
       return handleError(res, error, "Erro ao buscar tentativas do caso.");
     }
@@ -102,10 +126,16 @@ export class ClinicalController {
   async create(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Usuário não autenticado." });
+        return res.status(401).json({
+          error: "UNAUTHORIZED",
+          message: "Usuário não autenticado.",
+        });
       }
 
-      const clinicalCase = await clinicalService.create(req.body ?? {}, req.user.uid);
+      const clinicalCase = await clinicalService.create(
+        req.body ?? {},
+        req.user.uid,
+      );
       return res.status(201).json(clinicalCase);
     } catch (error) {
       return handleError(res, error, "Erro ao criar caso clínico.");
@@ -115,7 +145,10 @@ export class ClinicalController {
   async update(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Usuário não autenticado." });
+        return res.status(401).json({
+          error: "UNAUTHORIZED",
+          message: "Usuário não autenticado.",
+        });
       }
 
       const clinicalCase = await clinicalService.update(
@@ -136,12 +169,17 @@ export class ClinicalController {
   async status(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Usuário não autenticado." });
+        return res.status(401).json({
+          error: "UNAUTHORIZED",
+          message: "Usuário não autenticado.",
+        });
       }
 
       const status = String(req.body?.status ?? "") as ClinicalCaseStatus;
       if (!["rascunho", "publicado", "arquivado"].includes(status)) {
-        return res.status(400).json({ message: "Status inválido." });
+        return res
+          .status(400)
+          .json({ error: "VALIDATION_ERROR", message: "Status inválido." });
       }
 
       const clinicalCase = await clinicalService.updateStatus(
@@ -162,7 +200,9 @@ export class ClinicalController {
   async delete(req: AuthenticatedRequest, res: Response) {
     try {
       await clinicalService.delete(req.params.id);
-      return res.status(200).json({ message: "Caso clínico excluído com sucesso." });
+      return res
+        .status(200)
+        .json({ message: "Caso clínico excluído com sucesso." });
     } catch (error) {
       return handleError(res, error, "Erro ao excluir caso clínico.");
     }
