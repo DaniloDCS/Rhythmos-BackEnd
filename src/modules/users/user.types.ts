@@ -24,6 +24,7 @@ export interface IUser {
   role: TUserRoles;
   theme?: TUserThemes;
   location?: string;
+  lastAccessAt?: string | null;
   social?: {
     linkedin?: string;
     lattes?: string;

@@ -178,10 +178,28 @@ export const getAllUsers = async (req: Request, res: Response) => {
       query = query.startAfter(lastDoc);
     }
     const snapshot = await query.get();
-    const users: IUser[] = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...(doc.data() as IUser),
-    }));
+    const users = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const user = {
+          id: doc.id,
+          ...(doc.data() as IUser),
+        };
+
+        try {
+          const authUser = await auth.getUser(doc.id);
+
+          return {
+            ...user,
+            lastAccessAt: authUser.metadata.lastSignInTime ?? null,
+          };
+        } catch {
+          return {
+            ...user,
+            lastAccessAt: null,
+          };
+        }
+      }),
+    );
     const lastVisible = snapshot.docs[snapshot.docs.length - 1];
     const totalSnapshot = await db.collection("users").count().get();
     return res.json({
