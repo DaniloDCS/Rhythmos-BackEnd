@@ -29,10 +29,12 @@ import { FeedbackRoutes } from "./modules/feedback/feedback.routes";
 import { PrivacyRoutes } from "./modules/privacy/privacy.routes";
 import { RecommendationRoutes } from "./modules/recommendations/recommendation.routes";
 import { ClientErrorRoutes } from "./modules/observability/client-error.routes";
+import { AppearanceRoutes } from "./modules/appearance/appearance.routes";
 
 export const userRoutes = Router();
 
 userRoutes.use("/", UserRoutes);
+userRoutes.use("/appearance", AppearanceRoutes);
 userRoutes.use("/badges", BadgeRoutes);
 userRoutes.use("/announcements", AnnouncementRoutes);
 userRoutes.use("/feedback", FeedbackRoutes);

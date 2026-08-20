@@ -4,8 +4,14 @@ import { ILesson2, ILessonVersion2, Lesson } from "./lesson.model";
 import { extractBlocksText, IBlock } from "./block.types";
 import { db } from "../../config/firebase";
 import { AuthenticatedRequest } from "../../middlewares/auth.middleware";
-import { recordXpActivityAward, resolveXpAwardForUser } from "../xp-activity-rules/xp-activity-rule.service";
-import { grantRewardsInTransaction, type GrantedReward } from "../rewards/reward.service";
+import {
+  recordXpActivityAward,
+  resolveXpAwardForUser,
+} from "../xp-activity-rules/xp-activity-rule.service";
+import {
+  grantRewardsInTransaction,
+  type GrantedReward,
+} from "../rewards/reward.service";
 import { syncUserBadges } from "../badges/badge-award.service";
 
 const LESSONS_COLLECTION = "lessons";
@@ -1164,6 +1170,7 @@ import { IUserProgress } from "../users/user-progress.types";
 import { calculateUpdatedStreak } from "../users/user-progress.controller";
 import { ILevel } from "../levels/level.model";
 import { recordHeatmapActivity } from "../../utils/record-heatmap-activity";
+import { heatmapService } from "../heatmap/heatmap.service";
 
 const LEGACY_LESSON_XP = 10;
 
@@ -1335,10 +1342,15 @@ export const completeLesson = async (
       const rewardRequests = [
         ...availableLevels
           .filter((level) => level.levelNumber <= currentLevel.levelNumber)
-          .flatMap((level) => (level.rewardIds ?? []).map((rewardId) => ({
-            rewardId,
-            source: { type: "level" as const, id: level.id ?? String(level.levelNumber) },
-          }))),
+          .flatMap((level) =>
+            (level.rewardIds ?? []).map((rewardId) => ({
+              rewardId,
+              source: {
+                type: "level" as const,
+                id: level.id ?? String(level.levelNumber),
+              },
+            })),
+          ),
         ...completionRewardIds.map((rewardId) => ({
           rewardId,
           source: { type: "lesson" as const, id },
@@ -1405,6 +1417,8 @@ export const completeLesson = async (
     const leveledUp = currentLevel.levelNumber > oldLevelNumber;
     const badgeResult = await syncUserBadges(userId);
     await recordXpActivityAward(userId, "lesson_completed", lessonXp, id);
+
+    await heatmapService.recordActivity(userId);
 
     return res.status(200).json({
       message: "Aula marcada como concluída.",

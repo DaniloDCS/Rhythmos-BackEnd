@@ -20,6 +20,25 @@ const timestampMillis = (value: any, fallback: number) => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
+const resolveAuthorNames = async (announcements: Announcement[]) => {
+  const authorIds = [
+    ...new Set(
+      announcements
+        .filter((item) => !item.createdByName && item.createdBy)
+        .map((item) => item.createdBy!),
+    ),
+  ];
+  const snapshots = await Promise.all(
+    authorIds.map((id) => db.collection("users").doc(id).get()),
+  );
+  return new Map(
+    snapshots.map((snapshot) => [
+      snapshot.id,
+      String(snapshot.data()?.name ?? "Administrador"),
+    ]),
+  );
+};
+
 export const listActiveAnnouncements = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -38,7 +57,7 @@ export const listActiveAnnouncements = async (
     const isAdmin = ["administrador", "admin"].includes(role);
     const now = Date.now();
 
-    const announcements = announcementsSnapshot.docs
+    const activeAnnouncements = announcementsSnapshot.docs
       .map((doc) => Announcement.fromFirestore(doc.id, doc.data()))
       .filter((announcement) => {
         const status = normalize(announcement.status);
@@ -46,8 +65,14 @@ export const listActiveAnnouncements = async (
         const published = ["published", "publicado", "ativo"].includes(status);
         const audienceMatches =
           ["all", "todos", "geral"].includes(audience) ||
-          (isAdmin && ["administrators", "administradores", "admin"].includes(audience)) ||
-          (!isAdmin && ["students", "estudantes", "alunos", "usuarios"].includes(audience));
+          (isAdmin &&
+            ["administrators", "administradores", "admin"].includes(
+              audience,
+            )) ||
+          (!isAdmin &&
+            ["students", "estudantes", "alunos", "usuarios"].includes(
+              audience,
+            ));
 
         return (
           published &&
@@ -60,8 +85,18 @@ export const listActiveAnnouncements = async (
         (a, b) =>
           Number(b.pinned) - Number(a.pinned) ||
           timestampMillis(b.createdAt, 0) - timestampMillis(a.createdAt, 0),
-      )
-      .map((announcement) => announcement.toObject());
+      );
+
+    const authorNames = await resolveAuthorNames(activeAnnouncements);
+    const announcements = activeAnnouncements.map((announcement) => ({
+      ...announcement.toObject(),
+      createdByName:
+        announcement.createdByName ||
+        (announcement.createdBy
+          ? authorNames.get(announcement.createdBy)
+          : undefined) ||
+        "Administrador",
+    }));
 
     return res.status(200).json(announcements);
   } catch (error) {

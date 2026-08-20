@@ -18,6 +18,7 @@ export class Announcement {
   color?: string;
   pinned: boolean;
   createdBy?: string;
+  createdByName?: string;
   updatedBy?: string;
   createdAt: Timestamp;
   updatedAt?: Timestamp;
@@ -36,6 +37,7 @@ export class Announcement {
     this.color = data.color?.trim() ?? "#2563EB";
     this.pinned = data.pinned ?? false;
     this.createdBy = data.createdBy;
+    this.createdByName = data.createdByName?.trim() || undefined;
     this.updatedBy = data.updatedBy;
     this.createdAt = data.createdAt ?? Timestamp.now();
     this.updatedAt = data.updatedAt;
@@ -43,8 +45,13 @@ export class Announcement {
 
   validate() {
     if (!this.title) throw new Error("O título do comunicado é obrigatório.");
-    if (!this.description) throw new Error("A mensagem do comunicado é obrigatória.");
-    if (this.startsAt && this.endsAt && this.endsAt.toMillis() <= this.startsAt.toMillis()) {
+    if (!this.description)
+      throw new Error("A mensagem do comunicado é obrigatória.");
+    if (
+      this.startsAt &&
+      this.endsAt &&
+      this.endsAt.toMillis() <= this.startsAt.toMillis()
+    ) {
       throw new Error("O término deve ser posterior ao início da publicação.");
     }
     if (this.actionUrl && !this.actionLabel) {
@@ -67,6 +74,7 @@ export class Announcement {
       color: this.color || "#2563EB",
       pinned: this.pinned,
       createdBy: this.createdBy ?? null,
+      createdByName: this.createdByName ?? null,
       updatedBy: this.updatedBy ?? null,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt ?? null,

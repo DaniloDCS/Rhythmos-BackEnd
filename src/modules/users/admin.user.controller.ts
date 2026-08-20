@@ -15,15 +15,35 @@ import type { IEnrollment } from "../enrollments/enrollment.types";
 export const getUserLearningHistory = async (req: Request, res: Response) => {
   try {
     const userDoc = await db.collection("users").doc(req.params.id).get();
-    if (!userDoc.exists) return res.status(404).json({ error: "NOT_FOUND", message: "Usuário não encontrado." });
-    const snapshot = await db.collection("enrollments").where("userId", "==", req.params.id).get();
-    const enrollments = await Promise.all(snapshot.docs.map(async (doc) => {
-      const enrollment = { id: doc.id, ...doc.data() } as IEnrollment & { id: string };
-      return { ...enrollment, academicIndices: await AcademicIndicesService.calculate(enrollment) };
-    }));
-    return res.status(200).json({ user: { id: userDoc.id, ...userDoc.data() }, enrollments });
+    if (!userDoc.exists)
+      return res
+        .status(404)
+        .json({ error: "NOT_FOUND", message: "Usuário não encontrado." });
+    const snapshot = await db
+      .collection("enrollments")
+      .where("userId", "==", req.params.id)
+      .get();
+    const enrollments = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const enrollment = { id: doc.id, ...doc.data() } as IEnrollment & {
+          id: string;
+        };
+        return {
+          ...enrollment,
+          academicIndices: await AcademicIndicesService.calculate(enrollment),
+        };
+      }),
+    );
+    return res
+      .status(200)
+      .json({ user: { id: userDoc.id, ...userDoc.data() }, enrollments });
   } catch (caught) {
-    return res.status(500).json({ message: "Erro ao preparar o histórico completo do usuário.", error: caught instanceof Error ? caught.message : String(caught) });
+    return res
+      .status(500)
+      .json({
+        message: "Erro ao preparar o histórico completo do usuário.",
+        error: caught instanceof Error ? caught.message : String(caught),
+      });
   }
 };
 
@@ -76,7 +96,7 @@ export const createUser = async (req: Request, res: Response) => {
       name,
       email: normalizedEmail,
       role: role || "usuario",
-      theme: "theme-ebsher",
+      theme: "theme-ebserh",
       location: "",
       visits: 0,
       biography: biography || "❤️ Eu amo aprender com o Rhythmos!",
@@ -170,7 +190,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const limit = Number(req.query.limit) || 10;
+    const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 100);
     const cursor = req.query.cursor as string | undefined;
     let query = db.collection("users").orderBy("name").limit(limit);
     if (cursor) {
@@ -178,28 +198,15 @@ export const getAllUsers = async (req: Request, res: Response) => {
       query = query.startAfter(lastDoc);
     }
     const snapshot = await query.get();
-    const users = await Promise.all(
-      snapshot.docs.map(async (doc) => {
-        const user = {
-          id: doc.id,
-          ...(doc.data() as IUser),
-        };
-
-        try {
-          const authUser = await auth.getUser(doc.id);
-
-          return {
-            ...user,
-            lastAccessAt: authUser.metadata.lastSignInTime ?? null,
-          };
-        } catch {
-          return {
-            ...user,
-            lastAccessAt: null,
-          };
-        }
-      }),
-    );
+    const authUsers = snapshot.empty
+      ? { users: [] }
+      : await auth.getUsers(snapshot.docs.map((doc) => ({ uid: doc.id })));
+    const authByUid = new Map(authUsers.users.map((user) => [user.uid, user]));
+    const users = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as IUser),
+      lastAccessAt: authByUid.get(doc.id)?.metadata.lastSignInTime ?? null,
+    }));
     const lastVisible = snapshot.docs[snapshot.docs.length - 1];
     const totalSnapshot = await db.collection("users").count().get();
     return res.json({

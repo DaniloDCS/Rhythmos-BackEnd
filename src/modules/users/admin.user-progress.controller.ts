@@ -20,23 +20,38 @@ import { syncUserBadges } from "../badges/badge-award.service";
 import { AcademicIndicesService } from "../enrollments/academic-indices.service";
 import type { IEnrollment } from "../enrollments/enrollment.types";
 
-export const AcademicIndicesGetByUserId = async (req: Request, res: Response) => {
+export const AcademicIndicesGetByUserId = async (
+  req: Request,
+  res: Response,
+) => {
   try {
-    const snapshot = await db.collection("enrollments").where("userId", "==", req.params.id).get();
-    const results = await Promise.all(snapshot.docs.map(async (doc) => {
-      const enrollment = { id: doc.id, ...doc.data() } as IEnrollment & { id: string };
-      const trailDoc = await db.collection("trails").doc(enrollment.trailId).get();
-      return {
-        enrollmentId: enrollment.id,
-        trailId: enrollment.trailId,
-        trailTitle: String(trailDoc.data()?.title ?? "Trilha"),
-        status: enrollment.status,
-        indices: await AcademicIndicesService.calculate(enrollment),
-      };
-    }));
+    const snapshot = await db
+      .collection("enrollments")
+      .where("userId", "==", req.params.id)
+      .get();
+    const results = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const enrollment = { id: doc.id, ...doc.data() } as IEnrollment & {
+          id: string;
+        };
+        const trailDoc = await db
+          .collection("trails")
+          .doc(enrollment.trailId)
+          .get();
+        return {
+          enrollmentId: enrollment.id,
+          trailId: enrollment.trailId,
+          trailTitle: String(trailDoc.data()?.title ?? "Trilha"),
+          status: enrollment.status,
+          indices: await AcademicIndicesService.calculate(enrollment),
+        };
+      }),
+    );
     return res.status(200).json({ userId: req.params.id, results });
   } catch (error) {
-    return res.status(500).json({ message: "Erro ao calcular indicadores acadêmicos.", error });
+    return res
+      .status(500)
+      .json({ message: "Erro ao calcular indicadores acadêmicos.", error });
   }
 };
 
@@ -421,4 +436,169 @@ const getPreviousDateString = (dateString: string) => {
   const date = new Date(Date.UTC(year, month - 1, day));
   date.setUTCDate(date.getUTCDate() - 1);
   return date.toISOString().split("T")[0];
+};
+
+export const addXpToUser = async (id: string, amount: number) => {
+  if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
+    throw new Error("INVALID_XP_AMOUNT");
+  }
+
+  const levelsSnapshot = await db.collection("levels").get();
+
+  if (levelsSnapshot.empty) {
+    throw new Error("LEVELS_NOT_FOUND");
+  }
+
+  const availableLevels = levelsSnapshot.docs
+    .map((doc) => {
+      const data = doc.data();
+
+      return {
+        id: doc.id,
+        ...data,
+        active: data.active === true || data.active === "true",
+        featured: data.featured === true || data.featured === "true",
+      } as ILevel;
+    })
+    .filter((level) => level.active)
+    .sort((a, b) => a.levelNumber - b.levelNumber);
+
+  if (!availableLevels.length) {
+    throw new Error("ACTIVE_LEVELS_NOT_FOUND");
+  }
+
+  const progressRef = db.collection("user_progress").doc(id);
+
+  return db.runTransaction(async (transaction) => {
+    const progressDoc = await transaction.get(progressRef);
+
+    if (!progressDoc.exists) {
+      throw new Error("PROGRESS_NOT_FOUND");
+    }
+
+    const progress = progressDoc.data() as IUserProgress;
+
+    const oldTotalXp = progress.xp.total ?? 0;
+    const oldLevelNumber = progress.level.current ?? 1;
+    const newTotalXp = oldTotalXp + amount;
+
+    const currentLevel =
+      [...availableLevels]
+        .reverse()
+        .find((level) => newTotalXp >= level.xpMin) ?? availableLevels[0];
+
+    const currentLevelIndex = availableLevels.findIndex(
+      (level) => level.levelNumber === currentLevel.levelNumber,
+    );
+
+    const nextLevel = availableLevels[currentLevelIndex + 1];
+
+    const currentLevelXp = Math.max(0, newTotalXp - currentLevel.xpMin);
+
+    const levelXpRange = nextLevel
+      ? nextLevel.xpMin - currentLevel.xpMin
+      : currentLevel.xpMax - currentLevel.xpMin;
+
+    let progressPercent = 100;
+
+    if (nextLevel && levelXpRange > 0) {
+      progressPercent = Math.min(
+        100,
+        Number(((currentLevelXp / levelXpRange) * 100).toFixed(2)),
+      );
+    }
+
+    const updatedLevels = [...(progress.levels ?? [])];
+
+    const newlyUnlockedLevels = availableLevels.filter(
+      (level) =>
+        level.levelNumber > oldLevelNumber &&
+        level.levelNumber <= currentLevel.levelNumber,
+    );
+
+    const reachedAt = new Date().toISOString();
+
+    for (const level of newlyUnlockedLevels) {
+      if (!updatedLevels.some((item) => item.level === level.levelNumber)) {
+        updatedLevels.push({
+          level: level.levelNumber,
+          title: level.name,
+          unlocked: true,
+          reachedAt,
+        });
+      }
+    }
+
+    updatedLevels.sort((a, b) => a.level - b.level);
+
+    const updatedBadges = [...(progress.badges ?? [])];
+
+    for (const level of newlyUnlockedLevels) {
+      if (!level.badgeName) continue;
+
+      const badgeId = level.id ?? `level-${level.levelNumber}`;
+
+      if (!updatedBadges.some((badge) => badge.badgeId === badgeId)) {
+        updatedBadges.push({
+          badgeId,
+          name: level.badgeName,
+          unlockedAt: reachedAt,
+        });
+      }
+    }
+
+    const rewardRequests = availableLevels
+      .filter((level) => level.levelNumber <= currentLevel.levelNumber)
+      .flatMap((level) =>
+        (level.rewardIds ?? []).map((rewardId) => ({
+          rewardId,
+          source: {
+            type: "level" as const,
+            id: level.id ?? String(level.levelNumber),
+          },
+        })),
+      );
+
+    const rewardResult = await grantRewardsInTransaction(
+      transaction,
+      progress,
+      rewardRequests,
+    );
+
+    const payload: Partial<IUserProgress> = {
+      xp: {
+        total: newTotalXp,
+        currentLevelXp: nextLevel
+          ? currentLevelXp
+          : Math.min(currentLevelXp, Math.max(levelXpRange, 0)),
+        nextLevelXp: Math.max(levelXpRange, 0),
+      },
+      level: {
+        current: currentLevel.levelNumber,
+        currentTitle: currentLevel.name,
+        progressPercent,
+      },
+      levels: updatedLevels,
+      badges: updatedBadges,
+      rewards: rewardResult.progress.rewards,
+      unlocked: rewardResult.progress.unlocked,
+      updatedAt: Timestamp.now(),
+    };
+
+    transaction.update(progressRef, payload);
+
+    return {
+      progress: {
+        ...progress,
+        ...payload,
+      } as IUserProgress,
+      xpAdded: amount,
+      oldTotalXp,
+      newTotalXp,
+      oldLevelNumber,
+      currentLevel,
+      newlyUnlockedLevels,
+      rewards: rewardResult.granted,
+    };
+  });
 };

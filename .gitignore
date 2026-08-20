@@ -8,6 +8,8 @@ build/
 
 *.log
 npm-debug.log*
+Back
+tsconfig.zip
 
 .DS_Store
 

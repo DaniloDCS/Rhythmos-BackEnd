@@ -28,13 +28,20 @@ import { requireAdmin } from "./middlewares/admin.middleware";
 import { auditAdminMutation } from "./modules/audit/admin-audit.middleware";
 import { AdminObservabilityRoutes } from "./modules/observability/admin-observability.routes";
 import { AdminPrivacyPolicyRoutes } from "./modules/privacy/admin-privacy-policy.routes";
+import { AdminAppearanceRoutes } from "./modules/appearance/admin.appearance.routes";
 
 export const adminRoutes = Router();
 
-adminRoutes.use("/admin", verifyFirebaseToken, requireAdmin, auditAdminMutation);
+adminRoutes.use(
+  "/admin",
+  verifyFirebaseToken,
+  requireAdmin,
+  auditAdminMutation,
+);
 adminRoutes.use("/admin/audit", AdminAuditRoutes);
 adminRoutes.use("/admin/observability", AdminObservabilityRoutes);
 adminRoutes.use("/admin/privacy-policies", AdminPrivacyPolicyRoutes);
+adminRoutes.use("/admin/appearance", AdminAppearanceRoutes);
 
 adminRoutes.use("/admin/badges", AdminBadgeRoutes);
 adminRoutes.use("/admin/announcements", AdminAnnouncementRoutes);
