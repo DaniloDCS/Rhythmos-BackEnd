@@ -1,12 +1,11 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { db } from "../../config/firebase";
 import { IUserProgress } from "./user-progress.types";
-
-const COLLECTION = "user_progress";
+import { allUserGamificationQuery, userGamificationRef } from "../gamification/user-gamification.repository";
 
 export class UserProgressModel {
   static async create(data: IUserProgress) {
-    const ref = db.collection(COLLECTION).doc(data.userId);
+    const ref = userGamificationRef(data.userId);
 
     const payload: IUserProgress = {
       ...data,
@@ -20,7 +19,7 @@ export class UserProgressModel {
   }
 
   static async getById(userId: string) {
-    const doc = await db.collection(COLLECTION).doc(userId).get();
+    const doc = await userGamificationRef(userId).get();
 
     if (!doc.exists) return null;
 
@@ -28,26 +27,16 @@ export class UserProgressModel {
   }
 
   static async getAll() {
-    const snapshot = await db.collection(COLLECTION).get();
+    const snapshot = await allUserGamificationQuery().get();
     return snapshot.docs.map((doc) => doc.data() as IUserProgress);
   }
 
   static async getByUserId(userId: string) {
-    const snapshot = await db
-      .collection(COLLECTION)
-      .where("userId", "==", userId)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) {
-      return null;
-    }
-
-    return snapshot.docs[0].data() as IUserProgress;
+    return this.getById(userId);
   }
 
   static async update(userId: string, data: Partial<IUserProgress>) {
-    const ref = db.collection(COLLECTION).doc(userId);
+    const ref = userGamificationRef(userId);
 
     await ref.update({
       ...data,
@@ -60,7 +49,7 @@ export class UserProgressModel {
   }
 
   static async delete(userId: string) {
-    await db.collection(COLLECTION).doc(userId).delete();
+    await userGamificationRef(userId).delete();
     return true;
   }
 }

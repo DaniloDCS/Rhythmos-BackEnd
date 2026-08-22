@@ -1,6 +1,8 @@
 import { Timestamp } from "firebase-admin/firestore";
 
 import { db } from "../../config/firebase";
+import { userGamificationRef } from "../gamification/user-gamification.repository";
+import { syncRankingProfile } from "../gamification/ranking-profile.service";
 import type { IUserBadgeProgress, IUserProgress } from "../users/user-progress.types";
 import type { BadgeConditionType, IBadge } from "./badge.types";
 
@@ -28,7 +30,7 @@ const metricForCondition = (
     xp_total: Number(progress.xp?.total ?? 0),
     games_completed: Number(progress.games?.completed ?? 0),
     activities_completed: activities,
-    correct_answers: Number(progress.games?.wins ?? 0),
+    correct_answers: Number(progress.games?.correctAnswers ?? 0),
     streak_days: Number(progress.streak?.best ?? progress.streak?.current ?? 0),
     trail_completed: Number(progress.stats?.trailsCompleted ?? 0),
     manual: 0,
@@ -36,7 +38,7 @@ const metricForCondition = (
 };
 
 export const syncUserBadges = async (userId: string) => {
-  const progressRef = db.collection("user_progress").doc(userId);
+  const progressRef = userGamificationRef(userId);
   const [progressSnapshot, badgesSnapshot, completedTrailsSnapshot] =
     await Promise.all([
       progressRef.get(),
@@ -120,5 +122,6 @@ export const syncUserBadges = async (userId: string) => {
     };
   });
 
+  await syncRankingProfile(userId);
   return { progress: { ...progress, badges: earned }, catalog, newlyUnlocked };
 };

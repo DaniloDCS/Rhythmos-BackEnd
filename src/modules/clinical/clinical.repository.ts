@@ -1,5 +1,6 @@
 import type { DocumentData, Query } from "firebase-admin/firestore";
 import { db } from "../../config/firebase";
+import { userGamificationRef } from "../gamification/user-gamification.repository";
 import { ClinicalCaseModel } from "./clinical.model";
 import type {
   IClinicalCase,
@@ -46,7 +47,7 @@ export class ClinicalRepository {
   }
 
   userProgressRef(userId: string) {
-    return db.collection("user_progress").doc(userId);
+    return userGamificationRef(userId);
   }
 
   attemptRef() {

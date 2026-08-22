@@ -12,6 +12,13 @@ export type TGameCategory =
   | "arraste_e_solte"
   | "outro";
 
+export interface IGameContent {
+  startTitle?: string;
+  objective?: string;
+  instructions?: string;
+  tips?: string[];
+}
+
 export interface IGame {
   id: string;
   name: string;
@@ -26,6 +33,7 @@ export interface IGame {
   players?: number;
   xpReward: number;
   tags?: string[];
+  content?: IGameContent;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

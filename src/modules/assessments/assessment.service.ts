@@ -6,6 +6,7 @@ import {
   type IAssessmentQuestion,
 } from "./assessment.model";
 import { LearningFlowService } from "../enrollments/learning-flow.service";
+import { GamificationService } from "../gamification/gamification.service";
 
 const ASSESSMENTS = "assessments";
 const ATTEMPTS = "assessment_attempts";
@@ -210,6 +211,33 @@ export class AssessmentService {
           enrollmentId: input.enrollmentId,
           userId: input.userId,
           assessmentId: assessment.id,
+        });
+      }
+      await GamificationService.awardEvent({
+        userId: input.userId,
+        event: "quiz_completed",
+        sourceId: assessment.id,
+        idempotencyKey: `quiz_${input.userId}_${assessment.id}`,
+        metadata: {
+          attemptId: attemptRef.id,
+          score,
+          correctAnswers: results.filter((item) => item.correct).length,
+        },
+      });
+      if (flowResult?.newlyCompletedModule && flowResult.newlyCompletedModuleId) {
+        await GamificationService.awardEvent({
+          userId: input.userId,
+          event: "module_completed",
+          sourceId: flowResult.newlyCompletedModuleId,
+          idempotencyKey: `module_${input.userId}_${flowResult.newlyCompletedModuleId}`,
+        });
+      }
+      if (flowResult?.newlyCompletedTrail) {
+        await GamificationService.awardEvent({
+          userId: input.userId,
+          event: "trail_completed",
+          sourceId: flowResult.enrollment.trailId,
+          idempotencyKey: `trail_${input.userId}_${flowResult.enrollment.trailId}`,
         });
       }
     }

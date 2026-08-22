@@ -5,6 +5,9 @@ import { IUser } from "./user.model";
 import { normalizeUsername } from "../../utils/helpers";
 import { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 import { syncUserBadges } from "../badges/badge-award.service";
+import { userGamificationRef } from "../gamification/user-gamification.repository";
+import { syncRankingProfile } from "../gamification/ranking-profile.service";
+import { createInitialGamificationProgress } from "../gamification/initial-gamification-progress";
 import { getCurrentPrivacyPolicy } from "../privacy/privacy-policy.service";
 import { emitRealtimeNotification } from "../../realtime/socket";
 export function maskEmail(email: string): string {
@@ -178,7 +181,7 @@ export const createUser = async (req: Request, res: Response) => {
     });
     createdAuthUid = userRecord.uid;
     const userRef = db.collection("users").doc(createdAuthUid);
-    const userProgressRef = db.collection("user_progress").doc(createdAuthUid);
+    const userProgressRef = userGamificationRef(createdAuthUid);
     const privacyConsentRef = db.collection("privacy_consents").doc(createdAuthUid);
     const now = admin.firestore.FieldValue.serverTimestamp();
     const userData = {
@@ -195,52 +198,7 @@ export const createUser = async (req: Request, res: Response) => {
       createdAt: now,
       updatedAt: now,
     };
-    const userProgressData = {
-      id: createdAuthUid,
-      userId: createdAuthUid,
-      xp: {
-        total: 0,
-        currentLevelXp: 0,
-        nextLevelXp: 100,
-      },
-      level: {
-        current: 1,
-        currentTitle: "Iniciante",
-        progressPercent: 0,
-      },
-      levels: [
-        {
-          level: 1,
-          title: "Iniciante",
-          unlocked: true,
-          reachedAt: new Date(),
-        },
-      ],
-      streak: {
-        current: 0,
-        best: 0,
-        lastActivityDate: null,
-      },
-      games: {
-        played: 0,
-        completed: 0,
-        wins: 0,
-        perfectRuns: 0,
-        totalPlayTimeSeconds: 0,
-        lastPlayedAt: null,
-      },
-      badges: [],
-      rewards: [],
-      stats: {
-        quizzesCompleted: 0,
-        simulationsCompleted: 0,
-        trailsCompleted: 0,
-        supportMaterialsViewed: 0,
-      },
-      active: true,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const userProgressData = await createInitialGamificationProgress(createdAuthUid);
     await db.runTransaction(async (transaction) => {
       const usernameCheck = await transaction.get(usernameRef);
       if (usernameCheck.exists) throw new Error("Username já existe.");
@@ -263,6 +221,7 @@ export const createUser = async (req: Request, res: Response) => {
     await auth.setCustomUserClaims(createdAuthUid, {
       role: role || "usuario",
     });
+    await syncRankingProfile(createdAuthUid);
     return res.status(201).json({
       message: "Usuário criado com sucesso!",
       uid: createdAuthUid,
@@ -444,7 +403,7 @@ export const getBasicUser = async (req: Request, res: Response) => {
 export const getUserProgress = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const docRef = db.collection("user_progress").doc(userId);
+    const docRef = userGamificationRef(userId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       return res.status(404).json({
@@ -512,6 +471,7 @@ export const userUpdate = async (req: Request, res: Response) => {
     if (name) {
       await auth.updateUser(id, { displayName: name });
     }
+    await syncRankingProfile(id);
     const updatedDoc = await docRef.get();
     return res.status(200).json({
       message: "Usuário atualizado com sucesso",
@@ -546,6 +506,7 @@ export const updateOwnUser = async (req: AuthenticatedRequest, res: Response) =>
     }
     await docRef.update(updates);
     if (updates.name) await auth.updateUser(id, { displayName: String(updates.name) });
+    await syncRankingProfile(id);
     const updated = await docRef.get();
     return res.json({ message: "Perfil atualizado com sucesso.", user: { id: updated.id, ...updated.data() } });
   } catch (error) {
@@ -610,7 +571,7 @@ export const deleteUserByAdmin = async (
       });
     }
     const userRef = db.collection("users").doc(id);
-    const progressRef = db.collection("user_progress").doc(id);
+    const progressRef = userGamificationRef(id);
     const userSnap = await userRef.get();
     if (!userSnap.exists) {
       return res.status(404).json({
@@ -654,7 +615,7 @@ export const getDashboard = async (
     }
     const userId = req.user.uid;
     const userRef = db.collection("users").doc(userId);
-    const progressRef = db.collection("user_progress").doc(userId);
+    const progressRef = userGamificationRef(userId);
     const [userSnap, progressSnap, enrollmentsSnap, announcementsSnap] = await Promise.all([
       userRef.get(),
       progressRef.get(),

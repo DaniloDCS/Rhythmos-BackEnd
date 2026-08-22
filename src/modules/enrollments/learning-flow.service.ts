@@ -404,7 +404,9 @@ export class LearningFlowService {
       nextStep: resolvedNextStep,
       newlyCompletedLesson: !alreadyCompleted,
       newlyCompletedModule,
+      newlyCompletedModuleId: newlyCompletedModule ? currentModule.id : undefined,
       trailCompleted,
+      newlyCompletedTrail: trailCompleted && enrollment.status !== "concluido",
     };
   }
 
@@ -634,7 +636,11 @@ export class LearningFlowService {
       newlyCompletedAssessment:
         !enrollment.completedAssessmentsMap?.[input.assessmentId],
       newlyCompletedModule: !enrollment.completedModulesMap?.[currentModule.id],
+      newlyCompletedModuleId: !enrollment.completedModulesMap?.[currentModule.id]
+        ? currentModule.id
+        : undefined,
       trailCompleted,
+      newlyCompletedTrail: trailCompleted && enrollment.status !== "concluido",
     };
   }
 }

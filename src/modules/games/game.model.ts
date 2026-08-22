@@ -2,7 +2,12 @@ import { Timestamp, DocumentData } from "firebase-admin/firestore";
 
 import { TStatus } from "../../shared/domain.types";
 
-import type { TGameDifficulty, TGameCategory, IGame } from "./game.types";
+import type {
+  TGameDifficulty,
+  TGameCategory,
+  IGame,
+  IGameContent,
+} from "./game.types";
 
 export type { TGameDifficulty, TGameCategory, IGame } from "./game.types";
 
@@ -17,6 +22,27 @@ const normalizeTags = (value: unknown): string[] => {
         .filter(Boolean),
     ),
   ];
+};
+
+const normalizeContent = (value: unknown): IGameContent => {
+  if (!value || typeof value !== "object") return {};
+
+  const content = value as Record<string, unknown>;
+  const cleanText = (field: unknown) =>
+    typeof field === "string" ? field.trim() : undefined;
+
+  const normalized: IGameContent = {};
+  const startTitle = cleanText(content.startTitle);
+  const objective = cleanText(content.objective);
+  const instructions = cleanText(content.instructions);
+  const tips = normalizeTags(content.tips);
+
+  if (startTitle) normalized.startTitle = startTitle;
+  if (objective) normalized.objective = objective;
+  if (instructions) normalized.instructions = instructions;
+  if (tips.length) normalized.tips = tips;
+
+  return normalized;
 };
 
 const slugify = (text: string): string =>
@@ -103,6 +129,7 @@ export class Game implements IGame {
   players?: number;
   xpReward: number;
   tags?: string[];
+  content?: IGameContent;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 
@@ -120,6 +147,7 @@ export class Game implements IGame {
     this.players = Math.max(0, Number(data.players ?? 0));
     this.xpReward = Math.max(0, Number(data.xpReward ?? 0));
     this.tags = normalizeTags(data.tags);
+    this.content = normalizeContent(data.content);
     this.createdAt = data.createdAt ?? Timestamp.now();
     this.updatedAt = data.updatedAt;
   }
@@ -164,6 +192,9 @@ export class Game implements IGame {
     }
 
     if (data.tags !== undefined) this.tags = normalizeTags(data.tags);
+    if (data.content !== undefined) {
+      this.content = normalizeContent(data.content);
+    }
 
     this.validate();
     this.touch();
@@ -210,6 +241,7 @@ export class Game implements IGame {
       players: this.players ?? 0,
       xpReward: this.xpReward,
       tags: this.tags ?? [],
+      content: this.content ?? {},
       createdAt: this.createdAt ?? Timestamp.now(),
       updatedAt: this.updatedAt ?? null,
     };
@@ -232,6 +264,7 @@ export class Game implements IGame {
       xpReward: data.xpReward ?? data.xpBaseReward ?? 0,
 
       tags: data.tags ?? [],
+      content: data.content ?? {},
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     });

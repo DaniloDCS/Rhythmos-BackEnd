@@ -16,5 +16,7 @@ export interface LearningFlowResult {
   newlyCompletedLesson?: boolean;
   newlyCompletedAssessment?: boolean;
   newlyCompletedModule?: boolean;
+  newlyCompletedModuleId?: string;
   trailCompleted?: boolean;
+  newlyCompletedTrail?: boolean;
 }

@@ -12,15 +12,19 @@
     "retention:execute": "ts-node src/scripts/retention.ts --execute",
     "deletions:dry-run": "ts-node src/scripts/process-account-deletions.ts",
     "deletions:execute": "ts-node src/scripts/process-account-deletions.ts --execute"
+    ,"migrate:gamification": "ts-node src/scripts/migrate-gamification-v2.ts",
+    "migrate:user-progress": "ts-node src/scripts/migrate-user-progress-to-user-subcollection.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "ejs": "^4.0.1",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.6.2",
     "firebase": "^12.13.0",
     "firebase-admin": "^13.6.0",
     "multer": "^2.1.1",
+    "nodemailer": "^9.0.5",
     "socket.io": "^4.8.3",
     "zod": "^4.4.3"
   },
@@ -30,6 +34,7 @@
     "@types/express": "^5.0.5",
     "@types/multer": "^2.1.0",
     "@types/node": "^24.10.0",
+    "@types/nodemailer": "^8.0.1",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

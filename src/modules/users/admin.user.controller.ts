@@ -10,6 +10,9 @@ import { normalizeUsername } from "../../utils/helpers";
 
 import { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 import { AcademicIndicesService } from "../enrollments/academic-indices.service";
+import { userGamificationRef } from "../gamification/user-gamification.repository";
+import { syncRankingProfile } from "../gamification/ranking-profile.service";
+import { createInitialGamificationProgress } from "../gamification/initial-gamification-progress";
 import type { IEnrollment } from "../enrollments/enrollment.types";
 
 export const getUserLearningHistory = async (req: Request, res: Response) => {
@@ -87,7 +90,7 @@ export const createUser = async (req: Request, res: Response) => {
     });
     createdAuthUid = userRecord.uid;
     const userRef = db.collection("users").doc(createdAuthUid);
-    const userProgressRef = db.collection("user_progress").doc(createdAuthUid);
+    const userProgressRef = userGamificationRef(createdAuthUid);
     const now = admin.firestore.FieldValue.serverTimestamp();
     const userData = {
       id: createdAuthUid,
@@ -103,52 +106,7 @@ export const createUser = async (req: Request, res: Response) => {
       createdAt: now,
       updatedAt: now,
     };
-    const userProgressData = {
-      id: createdAuthUid,
-      userId: createdAuthUid,
-      xp: {
-        total: 0,
-        currentLevelXp: 0,
-        nextLevelXp: 100,
-      },
-      level: {
-        current: 1,
-        currentTitle: "Iniciante",
-        progressPercent: 0,
-      },
-      levels: [
-        {
-          level: 1,
-          title: "Iniciante",
-          unlocked: true,
-          reachedAt: new Date(),
-        },
-      ],
-      streak: {
-        current: 0,
-        best: 0,
-        lastActivityDate: null,
-      },
-      games: {
-        played: 0,
-        completed: 0,
-        wins: 0,
-        perfectRuns: 0,
-        totalPlayTimeSeconds: 0,
-        lastPlayedAt: null,
-      },
-      badges: [],
-      rewards: [],
-      stats: {
-        quizzesCompleted: 0,
-        simulationsCompleted: 0,
-        trailsCompleted: 0,
-        supportMaterialsViewed: 0,
-      },
-      active: true,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const userProgressData = await createInitialGamificationProgress(createdAuthUid);
     await db.runTransaction(async (transaction) => {
       const usernameCheck = await transaction.get(usernameRef);
       if (usernameCheck.exists) throw new Error("Username já existe.");
@@ -162,6 +120,7 @@ export const createUser = async (req: Request, res: Response) => {
     await auth.setCustomUserClaims(createdAuthUid, {
       role: role || "usuario",
     });
+    await syncRankingProfile(createdAuthUid);
     return res.status(201).json({
       message: "Usuário criado com sucesso!",
       uid: createdAuthUid,
@@ -302,6 +261,7 @@ export const userUpdate = async (req: Request, res: Response) => {
     if (role) {
       await auth.setCustomUserClaims(id, { role });
     }
+    await syncRankingProfile(id);
     const updatedDoc = await docRef.get();
     return res.status(200).json({
       message: "Usuário atualizado com sucesso",
@@ -339,7 +299,7 @@ export const deleteUserByAdmin = async (
       });
     }
     const userRef = db.collection("users").doc(id);
-    const progressRef = db.collection("user_progress").doc(id);
+    const progressRef = userGamificationRef(id);
     const userSnap = await userRef.get();
     if (!userSnap.exists) {
       return res.status(404).json({

@@ -4,18 +4,49 @@ import {
   getLearningFlowErrorStatus,
   LearningFlowService,
 } from "./learning-flow.service";
-import { addXpToUser } from "../users/admin.user-progress.controller";
-import {
-  recordXpActivityAward,
-  resolveXpAwardForUser,
-} from "../xp-activity-rules/xp-activity-rule.service";
+import { GamificationService } from "../gamification/gamification.service";
 import { heatmapService } from "../heatmap/heatmap.service";
+import { FieldValue } from "firebase-admin/firestore";
+import { db } from "../../config/firebase";
 
 const errorResponse = (res: Response, error: unknown) =>
   res.status(getLearningFlowErrorStatus(error)).json({
     message:
       error instanceof Error ? error.message : "Erro no fluxo de aprendizagem.",
   });
+
+const awardLearningEvents = async (
+  userId: string,
+  enrollmentId: string,
+  lessonId: string,
+  result: Awaited<ReturnType<typeof LearningFlowService.completeContentLesson>>,
+) => {
+  const awards = [];
+  if (result.newlyCompletedLesson) {
+    awards.push(await GamificationService.awardEvent({
+      userId, event: "lesson_completed", sourceId: lessonId,
+      idempotencyKey: `lesson_${userId}_${lessonId}`,
+    }));
+  }
+  if (result.newlyCompletedModule && result.newlyCompletedModuleId) {
+    awards.push(await GamificationService.awardEvent({
+      userId, event: "module_completed", sourceId: result.newlyCompletedModuleId,
+      idempotencyKey: `module_${userId}_${result.newlyCompletedModuleId}`,
+    }));
+  }
+  if (result.newlyCompletedTrail) {
+    awards.push(await GamificationService.awardEvent({
+      userId, event: "trail_completed", sourceId: result.enrollment.trailId,
+      idempotencyKey: `trail_${userId}_${result.enrollment.trailId}`,
+    }));
+  }
+  const added = awards.reduce((sum, item) => sum + item.xp.added, 0);
+  if (added > 0) {
+    await db.collection("enrollments").doc(enrollmentId).set({ xp: FieldValue.increment(added) }, { merge: true });
+    result.enrollment.xp = Number(result.enrollment.xp ?? 0) + added;
+  }
+  return { awards, added };
+};
 
 export const getCurrentLearningStep = async (
   req: AuthenticatedRequest,
@@ -65,27 +96,8 @@ export const completeLessonFlow = async (
       lessonId,
     });
 
-    let xpResult: Awaited<ReturnType<typeof addXpToUser>> | null = null;
-
+    const gamification = await awardLearningEvents(userId, req.params.id, lessonId, result);
     if (result.newlyCompletedLesson) {
-      const xpAward = await resolveXpAwardForUser(
-        "lesson_completed",
-        0,
-        userId,
-        lessonId,
-      );
-
-      if (xpAward.xp > 0) {
-        xpResult = await addXpToUser(userId, xpAward.xp);
-
-        await recordXpActivityAward(
-          userId,
-          "lesson_completed",
-          xpAward.xp,
-          lessonId,
-        );
-      }
-
       await heatmapService.recordActivity(userId);
     }
 
@@ -100,15 +112,7 @@ export const completeLessonFlow = async (
         : "Aula concluída com sucesso.",
       ...result,
       nextLesson,
-      xp: xpResult
-        ? {
-            added: xpResult.xpAdded,
-            previous: xpResult.oldTotalXp,
-            current: xpResult.newTotalXp,
-          }
-        : {
-            added: 0,
-          },
+      xp: { added: gamification.added, events: gamification.awards.map((item) => item.xp) },
     });
   } catch (error) {
     return errorResponse(res, error);
@@ -146,27 +150,8 @@ export const completePracticeFlow = async (
       score: typeof req.body?.score === "number" ? req.body.score : undefined,
     });
 
-    let xpResult: Awaited<ReturnType<typeof addXpToUser>> | null = null;
-
+    const gamification = await awardLearningEvents(userId, req.params.id, lessonId, result);
     if (result.newlyCompletedLesson) {
-      const xpAward = await resolveXpAwardForUser(
-        "lesson_completed",
-        0,
-        userId,
-        lessonId,
-      );
-
-      if (xpAward.xp > 0) {
-        xpResult = await addXpToUser(userId, xpAward.xp);
-
-        await recordXpActivityAward(
-          userId,
-          "lesson_completed",
-          xpAward.xp,
-          lessonId,
-        );
-      }
-
       await heatmapService.recordActivity(userId);
     }
 
@@ -175,15 +160,7 @@ export const completePracticeFlow = async (
         ? "Trilha concluída com sucesso."
         : "Prática concluída com sucesso.",
       ...result,
-      xp: xpResult
-        ? {
-            added: xpResult.xpAdded,
-            previous: xpResult.oldTotalXp,
-            current: xpResult.newTotalXp,
-          }
-        : {
-            added: 0,
-          },
+      xp: { added: gamification.added, events: gamification.awards.map((item) => item.xp) },
     });
   } catch (error) {
     return errorResponse(res, error);

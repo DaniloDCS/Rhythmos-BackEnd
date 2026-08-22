@@ -18,6 +18,11 @@ class App {
   }
 
   private configuration(): void {
+    const trustProxy = Number(process.env.TRUST_PROXY ?? 0);
+    if (Number.isInteger(trustProxy) && trustProxy > 0) {
+      this.express.set("trust proxy", trustProxy);
+    }
+
     this.express.use(
       "/",
       cors({

@@ -1,12 +1,13 @@
 import type { Response } from "express";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 import { db } from "../../config/firebase";
+import { userGamificationRef } from "../gamification/user-gamification.repository";
 
 const iso = (value: any) => value?.toDate?.()?.toISOString?.() ?? value ?? null;
 export const getMyRecommendations = async (req: AuthenticatedRequest, res: Response) => {
   const uid = req.user!.uid;
   const [enrollmentsSnap, trailsSnap, gamesSnap, attemptsSnap, progressDoc] = await Promise.all([
-    db.collection("enrollments").where("userId", "==", uid).get(), db.collection("trails").get(), db.collection("games").get(), db.collection("assessment_attempts").where("userId", "==", uid).limit(100).get(), db.collection("user_progress").doc(uid).get(),
+    db.collection("enrollments").where("userId", "==", uid).get(), db.collection("trails").get(), db.collection("games").get(), db.collection("assessment_attempts").where("userId", "==", uid).limit(100).get(), userGamificationRef(uid).get(),
   ]);
   const enrollments = enrollmentsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as any[];
   const enrolled = new Set(enrollments.map((item) => item.trailId)); const completed = new Set(enrollments.filter((item) => item.status === "concluido").map((item) => item.trailId));

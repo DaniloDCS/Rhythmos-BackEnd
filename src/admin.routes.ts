@@ -29,6 +29,7 @@ import { auditAdminMutation } from "./modules/audit/admin-audit.middleware";
 import { AdminObservabilityRoutes } from "./modules/observability/admin-observability.routes";
 import { AdminPrivacyPolicyRoutes } from "./modules/privacy/admin-privacy-policy.routes";
 import { AdminAppearanceRoutes } from "./modules/appearance/admin.appearance.routes";
+import { AdminGamificationRoutes } from "./modules/gamification/admin.gamification.routes";
 
 export const adminRoutes = Router();
 
@@ -42,6 +43,7 @@ adminRoutes.use("/admin/audit", AdminAuditRoutes);
 adminRoutes.use("/admin/observability", AdminObservabilityRoutes);
 adminRoutes.use("/admin/privacy-policies", AdminPrivacyPolicyRoutes);
 adminRoutes.use("/admin/appearance", AdminAppearanceRoutes);
+adminRoutes.use("/admin/gamification", AdminGamificationRoutes);
 
 adminRoutes.use("/admin/badges", AdminBadgeRoutes);
 adminRoutes.use("/admin/announcements", AdminAnnouncementRoutes);

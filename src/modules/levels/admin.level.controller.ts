@@ -4,7 +4,7 @@ import { Timestamp } from "firebase-admin/firestore";
 
 import { db } from "../../config/firebase";
 
-import { Level } from "./level.model";
+import { Level, type ILevel } from "./level.model";
 
 const COLLECTION = "levels";
 
@@ -43,6 +43,31 @@ const validateRewardIds = async (rewardIds: string[]) => {
   }
 };
 
+const validateLevelRange = async (
+  levelNumber: number,
+  xpMin: number,
+  xpMax: number,
+  ignoredId?: string,
+) => {
+  const snapshot = await db.collection(COLLECTION).get();
+  const others = snapshot.docs
+    .filter((doc) => doc.id !== ignoredId)
+    .map((doc) => ({ id: doc.id, ...doc.data() } as ILevel));
+  if (others.some((level) => Number(level.levelNumber) === levelNumber)) {
+    throw new Error("Já existe outro nível com esse número.");
+  }
+  if (others.some((level) => xpMin <= Number(level.xpMax) && xpMax >= Number(level.xpMin))) {
+    throw new Error("A faixa de XP se sobrepõe a outro nível.");
+  }
+  const ordered = [...others, { levelNumber, xpMin, xpMax } as ILevel]
+    .sort((a, b) => Number(a.levelNumber) - Number(b.levelNumber));
+  for (let index = 1; index < ordered.length; index++) {
+    if (Number(ordered[index].xpMin) !== Number(ordered[index - 1].xpMax) + 1) {
+      throw new Error("A faixa cria uma lacuna entre níveis consecutivos.");
+    }
+  }
+};
+
 export const createLevel = async (req: Request, res: Response) => {
   try {
     const {
@@ -68,6 +93,7 @@ export const createLevel = async (req: Request, res: Response) => {
     }
 
     await validateRewardIds(rewardIds);
+    await validateLevelRange(Number(levelNumber), Number(xpMin), Number(xpMax));
 
     const levelRef = db.collection(COLLECTION).doc();
 
@@ -209,6 +235,12 @@ export const updateLevelAdmin = async (req: Request, res: Response) => {
         : level.rewardIds;
 
     await validateRewardIds(rewardIds);
+    await validateLevelRange(
+      nextLevelNumber,
+      Number(req.body.xpMin ?? level.xpMin),
+      Number(req.body.xpMax ?? level.xpMax),
+      id,
+    );
 
     level.update(
       {

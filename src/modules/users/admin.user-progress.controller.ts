@@ -17,6 +17,7 @@ import {
   grantRewardsToUser,
 } from "../rewards/reward.service";
 import { syncUserBadges } from "../badges/badge-award.service";
+import { userGamificationRef } from "../gamification/user-gamification.repository";
 import { AcademicIndicesService } from "../enrollments/academic-indices.service";
 import type { IEnrollment } from "../enrollments/enrollment.types";
 
@@ -261,7 +262,7 @@ export const ProgressAddXp = async (
         message: "Nenhum nível ativo foi cadastrado.",
       });
     }
-    const progressRef = db.collection("user_progress").doc(id);
+    const progressRef = userGamificationRef(id);
     const result = await db.runTransaction(async (transaction) => {
       const progressDoc = await transaction.get(progressRef);
       if (!progressDoc.exists) {
@@ -467,7 +468,7 @@ export const addXpToUser = async (id: string, amount: number) => {
     throw new Error("ACTIVE_LEVELS_NOT_FOUND");
   }
 
-  const progressRef = db.collection("user_progress").doc(id);
+  const progressRef = userGamificationRef(id);
 
   return db.runTransaction(async (transaction) => {
     const progressDoc = await transaction.get(progressRef);

@@ -7,9 +7,9 @@ import type {
   IUserUnlockedContent,
 } from "../users/user-progress.types";
 import type { IReward, RewardType } from "./reward.model";
+import { userGamificationRef } from "../gamification/user-gamification.repository";
 
 const REWARDS_COLLECTION = "rewards";
-const USER_PROGRESS_COLLECTION = "user_progress";
 
 export interface RewardGrantRequest {
   rewardId: string;
@@ -244,7 +244,7 @@ export const grantRewardsToUser = async (
   userId: string,
   requests: RewardGrantRequest[],
 ): Promise<RewardGrantResult> => {
-  const progressRef = db.collection(USER_PROGRESS_COLLECTION).doc(userId);
+  const progressRef = userGamificationRef(userId);
 
   return db.runTransaction(async (transaction) => {
     const progressDoc = await transaction.get(progressRef);

@@ -70,11 +70,11 @@ Primeira conclusão correta: `+100 XP`.
 
 O módulo atualiza:
 
-- `user_progress.xp`
-- `user_progress.level`
-- `user_progress.levels`
-- `user_progress.streak`
-- `user_progress.stats.simulationsCompleted`
+- `users/{uid}/gamification/progress.xp`
+- `users/{uid}/gamification/progress.level`
+- `users/{uid}/gamification/progress.levels`
+- `users/{uid}/gamification/progress.streak`
+- `users/{uid}/gamification/progress.stats.simulationsCompleted`
 
 Esta versão não depende do `RewardService`, justamente para ficar compatível com o núcleo atual do backend. Recompensas de level-up podem ser reintegradas depois sem bloquear o Clinical.
 

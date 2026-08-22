@@ -79,6 +79,7 @@ export const createGame = async (req: Request, res: Response) => {
       players: 0,
       xpReward: parseNumber(req.body.xpReward, 0),
       tags: parseArrayField(req.body.tags),
+      content: req.body.content,
       createdAt: Timestamp.now(),
     });
 
@@ -205,6 +206,7 @@ export const updateGameAdmin = async (req: Request, res: Response) => {
         req.body.tags !== undefined
           ? parseArrayField(req.body.tags)
           : game.tags,
+      content: req.body.content ?? game.content,
     });
 
     await gameRef.set(game.toObject(), { merge: true });

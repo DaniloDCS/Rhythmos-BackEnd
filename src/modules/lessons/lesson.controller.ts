@@ -13,6 +13,7 @@ import {
   type GrantedReward,
 } from "../rewards/reward.service";
 import { syncUserBadges } from "../badges/badge-award.service";
+import { userGamificationRef } from "../gamification/user-gamification.repository";
 
 const LESSONS_COLLECTION = "lessons";
 const USER_LESSON_PROGRESS_COLLECTION = "userLessonProgress";
@@ -1172,8 +1173,6 @@ import { ILevel } from "../levels/level.model";
 import { recordHeatmapActivity } from "../../utils/record-heatmap-activity";
 import { heatmapService } from "../heatmap/heatmap.service";
 
-const LEGACY_LESSON_XP = 10;
-
 export const completeLesson = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -1225,7 +1224,7 @@ export const completeLesson = async (
       }
     }
 
-    const userProgressRef = db.collection("user_progress").doc(userId);
+    const userProgressRef = userGamificationRef(userId);
 
     const userProgressDoc = await userProgressRef.get();
 
@@ -1240,7 +1239,7 @@ export const completeLesson = async (
 
     const { xp: lessonXp } = await resolveXpAwardForUser(
       "lesson_completed",
-      LEGACY_LESSON_XP,
+      0,
       userId,
       id,
     );

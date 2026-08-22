@@ -1,0 +1,16 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "ranking_profiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "score", "order": "DESCENDING" },
+        { "fieldPath": "xp", "order": "DESCENDING" },
+        { "fieldPath": "wins", "order": "DESCENDING" },
+        { "fieldPath": "reachedScoreAt", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

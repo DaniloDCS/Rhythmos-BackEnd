@@ -3,6 +3,7 @@ import { db } from "../../config/firebase";
 import type { IUserProgress } from "../users/user-progress.types";
 import type { ILevel } from "../levels/level.model";
 import { calculateUpdatedStreak } from "../users/user-progress.controller";
+import { getXpActivityRule } from "../xp-activity-rules/xp-activity-rule.service";
 import { DEFAULT_CLINICAL_ANALYSIS_STEPS } from "./clinical.constants";
 import { ClinicalCaseModel } from "./clinical.model";
 import { clinicalRepository } from "./clinical.repository";
@@ -321,6 +322,10 @@ export class ClinicalService {
     if (!caseId) throw new ClinicalError(400, "ID do caso é obrigatório.");
     if (!answer.trim())
       throw new ClinicalError(400, "A resposta final é obrigatória.");
+    const clinicalRule = await getXpActivityRule("clinical_case_completed");
+    const clinicalCaseXp = clinicalRule?.active
+      ? Math.max(0, Number(clinicalRule.xp ?? 0))
+      : 0;
     const levelsSnapshot = await db.collection("levels").get();
     const levels = levelsSnapshot.docs
       .map((doc) => {
@@ -420,7 +425,7 @@ export class ClinicalService {
       const progress = progressDoc.data() as IUserProgress;
       const oldXp = progress.xp?.total ?? 0;
       const oldLevel = progress.level?.current ?? 1;
-      const newXp = oldXp + CLINICAL_CASE_XP;
+      const newXp = oldXp + clinicalCaseXp;
       const currentLevel =
         [...levels].reverse().find((level) => newXp >= level.xpMin) ??
         levels[0];
@@ -495,7 +500,7 @@ export class ClinicalService {
         answer: answer.trim(),
         correct: true,
         awarded: true,
-        xpAwarded: CLINICAL_CASE_XP,
+        xpAwarded: clinicalCaseXp,
         createdAt: now,
       });
       transaction.set(completionRef, {
@@ -503,7 +508,7 @@ export class ClinicalService {
         userId,
         caseId,
         completed: true,
-        xpAwarded: CLINICAL_CASE_XP,
+        xpAwarded: clinicalCaseXp,
         firstCorrectAttemptId: attemptRef.id,
         completedAt: now,
         createdAt: now,
@@ -519,7 +524,7 @@ export class ClinicalService {
       result = {
         correct: true,
         awarded: true,
-        xpAdded: CLINICAL_CASE_XP,
+        xpAdded: clinicalCaseXp,
         correctAnswer: item.correctAnswer,
         feedback: item.feedbackCorrect || "Resposta correta.",
         progress: updatedProgress,

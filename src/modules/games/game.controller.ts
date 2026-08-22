@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { db } from "../../config/firebase";
+import { userGamificationRef } from "../gamification/user-gamification.repository";
 import { Game } from "./game.model";
 import { parseArrayField, parseBoolean, parseNumber } from "../../utils/parse";
 import { AuthenticatedRequest } from "../../middlewares/auth.middleware";
@@ -303,6 +304,80 @@ export const getAvailableGames = async (_: Request, res: Response) => {
   }
 };
 
+export const getMyGameStats = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: "UNAUTHORIZED",
+        message: "Usuário não autenticado.",
+      });
+    }
+
+    const snapshot = await db
+      .collection("game_history")
+      .where("userId", "==", req.user.uid)
+      .limit(2000)
+      .get();
+
+    const stats: Record<
+      string,
+      {
+        played: number;
+        wins: number;
+        correctAnswers: number;
+        totalAnswers: number;
+        accuracy: number | null;
+      }
+    > = {};
+
+    snapshot.docs.forEach((doc) => {
+      const attempt = doc.data();
+      const gameId = String(attempt.gameId ?? "").trim();
+      if (!gameId) return;
+
+      const current = stats[gameId] ?? {
+        played: 0,
+        wins: 0,
+        correctAnswers: 0,
+        totalAnswers: 0,
+        accuracy: null,
+      };
+
+      current.played += 1;
+      current.wins += attempt.won === true ? 1 : 0;
+      current.correctAnswers += Math.max(
+        0,
+        Number(attempt.correctAnswers) || 0,
+      );
+      current.totalAnswers += Math.max(0, Number(attempt.totalAnswers) || 0);
+      stats[gameId] = current;
+    });
+
+    Object.values(stats).forEach((item) => {
+      const rate = item.totalAnswers
+        ? (item.correctAnswers / item.totalAnswers) * 100
+        : item.played
+          ? (item.wins / item.played) * 100
+          : null;
+
+      item.accuracy =
+        rate === null ? null : Math.round(Math.min(100, Math.max(0, rate)));
+    });
+
+    return res.status(200).json(stats);
+  } catch (err) {
+    console.error("Erro ao buscar desempenho dos jogos:", err);
+
+    return res.status(500).json({
+      message: "Erro ao buscar desempenho dos jogos",
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
+
 export const getAvailableGameById = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -406,13 +481,16 @@ export const completeGame = async (
 
     const isWinner = Boolean(won);
 
-    const xpResolution = await resolveXpAwardForUser(
-      "game_completed",
-      Number(game.xpReward ?? 0),
-      userId,
-      id,
-    );
-    const xpReward = xpResolution.xp;
+    const xpReward = isWinner
+      ? (
+          await resolveXpAwardForUser(
+            "game_completed",
+            Number(game.xpReward ?? 0),
+            userId,
+            id,
+          )
+        ).xp
+      : 0;
 
     const levelsSnapshot = await db.collection("levels").get();
 
@@ -444,7 +522,7 @@ export const completeGame = async (
       });
     }
 
-    const progressRef = db.collection("user_progress").doc(userId);
+    const progressRef = userGamificationRef(userId);
 
     const historyRef = db.collection("game_history").doc();
 

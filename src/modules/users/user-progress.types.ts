@@ -71,6 +71,7 @@ export interface IUserProgress {
     perfectRuns: number;
     totalPlayTimeSeconds: number;
     lastPlayedAt?: string | null;
+    correctAnswers?: number;
   };
 
   badges: IUserBadgeProgress[];

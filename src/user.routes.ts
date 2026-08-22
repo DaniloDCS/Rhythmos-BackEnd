@@ -30,9 +30,13 @@ import { PrivacyRoutes } from "./modules/privacy/privacy.routes";
 import { RecommendationRoutes } from "./modules/recommendations/recommendation.routes";
 import { ClientErrorRoutes } from "./modules/observability/client-error.routes";
 import { AppearanceRoutes } from "./modules/appearance/appearance.routes";
+import { PasswordResetRoutes } from "./modules/auth/password-reset.routes";
+import { RankingRoutes } from "./modules/gamification/ranking.routes";
 
 export const userRoutes = Router();
 
+userRoutes.use("/auth", PasswordResetRoutes);
+userRoutes.use("/ranking", RankingRoutes);
 userRoutes.use("/", UserRoutes);
 userRoutes.use("/appearance", AppearanceRoutes);
 userRoutes.use("/badges", BadgeRoutes);

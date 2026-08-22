@@ -10,6 +10,8 @@ import {
   grantRewardsToUser,
 } from "../rewards/reward.service";
 import { syncUserBadges } from "../badges/badge-award.service";
+import { userGamificationRef } from "../gamification/user-gamification.repository";
+import { createInitialGamificationProgress } from "../gamification/initial-gamification-progress";
 export const ProgressCreate = async (req: Request, res: Response) => {
   try {
     const { id } = req.body;
@@ -26,73 +28,12 @@ export const ProgressCreate = async (req: Request, res: Response) => {
         message: "Progresso deste usuário já existe.",
       });
     }
-    const levelsSnapshot = await db
-      .collection("levels")
-      .where("active", "==", true)
-      .get();
-    const levels = levelsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as ILevel[];
-    levels.sort((a, b) => a.levelNumber - b.levelNumber);
-    const initialLevel = levels[0];
-    if (!initialLevel) {
-      return res.status(500).json({
-        error: "INTERNAL_SERVER_ERROR",
-        message: "Nenhum nível ativo foi cadastrado.",
-      });
-    }
-    const levelRange = initialLevel.xpMax - initialLevel.xpMin;
-    const initialData: IUserProgress = {
-      userId: id,
-      xp: {
-        total: 0,
-        currentLevelXp: 0,
-        nextLevelXp: levelRange,
-      },
-      level: {
-        current: initialLevel.levelNumber,
-        currentTitle: initialLevel.name,
-        progressPercent: 0,
-      },
-      levels: [
-        {
-          level: initialLevel.levelNumber,
-          title: initialLevel.name,
-          unlocked: true,
-          reachedAt: new Date().toISOString(),
-        },
-      ],
-      games: {
-        played: 0,
-        completed: 0,
-        wins: 0,
-        perfectRuns: 0,
-        totalPlayTimeSeconds: 0,
-        lastPlayedAt: null,
-      },
-      badges: [],
-      rewards: [],
-      unlocked: {
-        games: {},
-        trails: {},
-        modules: {},
-      },
-      streak: {
-        current: 0,
-        best: 0,
-        lastActivityDate: null,
-      },
-      stats: {
-        quizzesCompleted: 0,
-        simulationsCompleted: 0,
-        trailsCompleted: 0,
-        supportMaterialsViewed: 0,
-      },
-      active: true,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    };
+    const initialData = await createInitialGamificationProgress(id);
+    const initialLevelSnapshot = await db.collection("levels")
+      .where("levelNumber", "==", initialData.level.current).limit(1).get();
+    const initialLevel = initialLevelSnapshot.empty
+      ? { id: String(initialData.level.current), levelNumber: initialData.level.current, rewardIds: [] as string[] }
+      : { id: initialLevelSnapshot.docs[0].id, ...initialLevelSnapshot.docs[0].data() } as ILevel;
     const created = await UserProgressModel.create(initialData);
     const initialRewardRequests = (initialLevel.rewardIds ?? []).map(
       (rewardId) => ({
@@ -271,7 +212,7 @@ export const ProgressAddXp = async (
         message: "Nenhum nível ativo foi cadastrado.",
       });
     }
-    const progressRef = db.collection("user_progress").doc(id);
+    const progressRef = userGamificationRef(id);
     const result = await db.runTransaction(async (transaction) => {
       const progressDoc = await transaction.get(progressRef);
       if (!progressDoc.exists) {
@@ -492,7 +433,7 @@ export const ProgressRegisterActivity = async (
       });
     }
     const id = req.user.uid;
-    const progressRef = db.collection("user_progress").doc(id);
+    const progressRef = userGamificationRef(id);
     const result = await db.runTransaction(async (transaction) => {
       const progressDoc = await transaction.get(progressRef);
       if (!progressDoc.exists) {

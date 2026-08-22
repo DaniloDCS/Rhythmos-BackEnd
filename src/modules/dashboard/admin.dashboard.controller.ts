@@ -3,7 +3,6 @@ import { db } from "../../config/firebase";
 import type { DocumentData, QuerySnapshot } from "firebase-admin/firestore";
 const COLLECTIONS = {
   users: "users",
-  userProgress: "user_progress",
   games: "games",
   gameHistory: "game_history",
   trails: "trails",
@@ -164,7 +163,7 @@ export const getAdminDashboard = async (_req: Request, res: Response) => {
       registrationAttemptsSnapshot,
     ] = await Promise.all([
       db.collection(COLLECTIONS.users).get(),
-      db.collection(COLLECTIONS.userProgress).get(),
+      db.collectionGroup("gamification").where("userId", ">", "").get(),
       db.collection(COLLECTIONS.games).get(),
       db.collection(COLLECTIONS.gameHistory).get(),
       db.collection(COLLECTIONS.trails).get(),
